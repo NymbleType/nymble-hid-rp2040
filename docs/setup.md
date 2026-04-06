@@ -45,16 +45,23 @@ Send `PING` — you should get `OK:PONG` back and see two quick LED blinks.
 
 The device reads newline-terminated commands over USB serial:
 
-| Command | Example | Description |
-|---------|---------|-------------|
-| `TYPE:<text>` | `TYPE:Hello world` | Types the text as keystrokes |
-| `KEY:<name>` | `KEY:ENTER` | Presses a special key |
-| `PING` | `PING` | Health check (responds `OK:PONG`) |
-| Raw text | `Hello` | Treated as `TYPE:Hello` |
+| Command | Example | Response | Description |
+|---------|---------|----------|-------------|
+| `TYPE:<text>` | `TYPE:Hello world` | `OK:TYPED` | Types text as keystrokes |
+| `KEY:<name>` | `KEY:ENTER` | `OK:KEY` | Presses a special key |
+| `COMBO:<keys>` | `COMBO:CTRL+A` | `OK:COMBO` | Presses a key combination |
+| `HOLD:<key>` | `HOLD:SHIFT` | `OK:HOLD` | Holds a key down |
+| `RELEASE` | `RELEASE` | `OK:RELEASE` | Releases all held keys |
+| `SPEED:<ms>` | `SPEED:50` | `OK:SPEED` | Sets inter-key delay (ms) |
+| `DELAY:<ms>` | `DELAY:1000` | `OK:DELAY` | Pauses for N milliseconds |
+| `PING` | `PING` | `OK:PONG` | Health check |
+| Raw text | `Hello` | `OK:TYPED` | Treated as `TYPE:Hello` |
 
-### Supported Special Keys
+### Supported Keys
 
-`ENTER`, `TAB`, `BACKSPACE`, `DELETE`, `ESCAPE`, `SPACE`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `HOME`, `END`, `PAGEUP`, `PAGEDOWN`
+**Special:** `ENTER`, `TAB`, `BACKSPACE`, `DELETE`, `ESCAPE`, `SPACE`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `HOME`, `END`, `PAGEUP`, `PAGEDOWN`, `INSERT`, `CAPSLOCK`, `F1`–`F12`
+
+**Modifiers:** `CTRL`, `SHIFT`, `ALT`, `GUI`/`WIN`/`CMD`
 
 ## Troubleshooting
 
