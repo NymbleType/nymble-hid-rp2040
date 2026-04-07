@@ -276,6 +276,10 @@ while True:
         if data_serial.in_waiting:
             raw = data_serial.read(data_serial.in_waiting)
             for byte in raw:
+                # Skip null bytes and non-printable control chars
+                # (CDC data serial can send stray nulls on connect)
+                if byte == 0 or (byte < 0x20 and byte not in (0x0A, 0x0D)):
+                    continue
                 char = chr(byte)
                 if char == "\n" or char == "\r":
                     if buf:
