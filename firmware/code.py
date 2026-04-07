@@ -21,10 +21,15 @@ import time
 import board
 import digitalio
 import supervisor
+import usb_cdc
 import usb_hid
 from adafruit_hid.keyboard import Keyboard
 from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
 from adafruit_hid.keycode import Keycode
+
+# Use the CDC data serial port if available (boot.py enables it),
+# otherwise fall back to sys.stdin (console serial, used in safe mode).
+data_serial = usb_cdc.data if usb_cdc.data else None
 
 # Status LED
 led = digitalio.DigitalInOut(board.LED)
@@ -237,18 +242,58 @@ def handle_line(line):
 
 
 # --- Main loop ---
-print("nymble-hid-rp2040 ready")
+
+
+def _respond(msg):
+    """Send a response back over the active serial channel."""
+    if data_serial:
+        data_serial.write((msg + "\n").encode("utf-8"))
+        data_serial.flush()
+    else:
+        print(msg)
+
+
+# Monkey-patch print for protocol responses so they go to the right port.
+# handle_line and friends use print() — redirect to data serial when active.
+if data_serial:
+    import builtins
+    _original_print = builtins.print
+
+    def _serial_print(*args, **kwargs):
+        msg = " ".join(str(a) for a in args)
+        data_serial.write((msg + "\n").encode("utf-8"))
+        data_serial.flush()
+
+    builtins.print = _serial_print
+
+_respond("nymble-hid-rp2040 ready")
 blink(3, 0.1)
 
 buf = ""
 while True:
-    if supervisor.runtime.serial_bytes_available:
-        char = sys.stdin.read(1)
-        if char == "\n" or char == "\r":
-            if buf:
-                handle_line(buf)
-                buf = ""
-        elif char:
-            buf += char
+    if data_serial:
+        # Read from CDC data serial
+        if data_serial.in_waiting:
+            raw = data_serial.read(data_serial.in_waiting)
+            for byte in raw:
+                char = chr(byte)
+                if char == "\n" or char == "\r":
+                    if buf:
+                        handle_line(buf)
+                        buf = ""
+                else:
+                    buf += char
+        else:
+            time.sleep(0.01)
     else:
-        time.sleep(0.01)
+        # Fallback: console serial (safe mode)
+        if supervisor.runtime.serial_bytes_available:
+            char = sys.stdin.read(1)
+            if char == "\n" or char == "\r":
+                if buf:
+                    handle_line(buf)
+                    buf = ""
+            elif char:
+                buf += char
+        else:
+            time.sleep(0.01)

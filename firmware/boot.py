@@ -42,5 +42,6 @@ usb_hid.enable((usb_hid.Device.KEYBOARD,))
 if not safe_mode:
     # Disable CIRCUITPY USB mass storage — device appears only as a keyboard
     storage.disable_usb_drive()
-    # Disable USB serial console (the data serial for code.py still works)
-    usb_cdc.disable()
+    # Disable the REPL console serial but keep the data serial.
+    # The data serial is what code.py uses to receive commands from the relay.
+    usb_cdc.enable(console=False, data=True)
